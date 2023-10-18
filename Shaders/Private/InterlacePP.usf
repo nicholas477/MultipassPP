@@ -1,0 +1,39 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
+#include "/Engine/Private/Common.ush"
+#include "/Engine/Private/PrintValue.ush"
+
+Texture2D InputTexture;
+SamplerState InputSampler;
+
+float Time;
+float Weight;
+uint FrameNumber;
+
+uint ResX;
+uint ResY;
+
+bool bDrawThisFrame(uint2 i)
+{
+	return i.y % 2 == FrameNumber % 2;
+}
+
+float4 InterlacePS(
+	noperspective float4 UVAndScreenPos : TEXCOORD0
+	) : SV_Target0
+{	
+	float2 UV = UVAndScreenPos.xy;
+	
+	{
+		float2 Resf = float2(ResX, ResY);
+		uint2 i = floor(UV * Resf);
+		
+		if (!bDrawThisFrame(i))
+		{
+			//discard;
+			return float4(0.0, 0.0, 0.0, 0.0);
+		}
+	}
+	
+	return float4(Texture2DSample(InputTexture, InputSampler, UV).rgb, 1.0);
+}

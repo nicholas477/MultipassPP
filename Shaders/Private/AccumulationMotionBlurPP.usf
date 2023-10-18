@@ -1,0 +1,51 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
+#include "/Engine/Private/Common.ush"
+#include "/Engine/Private/PrintValue.ush"
+
+Texture2D InputTexture;
+SamplerState InputSampler;
+
+Texture2D MotionBlurTexture;
+SamplerState MotionBlurSampler;
+
+uint LastFrameNumber;
+
+uint2 InputTextureSize;
+uint2 OutputTextureSize;
+
+float DeltaTime;
+float FadeTime;
+float FadeWeight;
+
+float4 AccumulationMotionBlurPS(
+	noperspective float4 UVAndScreenPos : TEXCOORD0
+	) : SV_Target0
+{	
+	float2 UV = UVAndScreenPos.xy;
+	
+	// The UVs are scaled to the size of the UV rect of the viewport, so we need to unscale
+	// the UVs for reading from the output texture
+	float2 OutputUVs = (float2(InputTextureSize) / float2(OutputTextureSize)) * UV;
+	
+	const float FrameRate = 1.0 / DeltaTime;
+
+	float Weight = exp(log(FadeWeight) / (FrameRate * FadeTime));
+	Weight = saturate(Weight);
+	
+	if (LastFrameNumber == 0)
+	{
+		return float4(Texture2DSample(InputTexture, InputSampler, UV).rgb, 1.0);
+	}
+	
+	float3 PrevFrame = Texture2DSample(MotionBlurTexture, MotionBlurSampler, OutputUVs).rgb;
+	float3 CurFrame = Texture2DSample(InputTexture, InputSampler, UV).rgb;
+	
+	float3 Output = lerp(CurFrame, PrevFrame, Weight);
+	
+	// float BrightnessWeight = pow(length(Output), 0.5);
+	// BrightnessWeight = saturate(BrightnessWeight);
+	// Output = lerp(CurFrame, Output, BrightnessWeight);
+	
+	return float4(Output, 1.0);
+}
