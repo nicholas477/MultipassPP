@@ -9,6 +9,10 @@
 #include "ShaderParameterStruct.h"
 #include "ScreenPass.h"
 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
+#include "SceneRendering.h"
+#endif
+
 struct IPooledRenderTarget;
 
 struct MULTIPASSPP_API IMultipassPPViewData : public TSharedFromThis<IMultipassPPViewData, ESPMode::ThreadSafe>
