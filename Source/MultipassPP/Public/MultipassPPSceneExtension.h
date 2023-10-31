@@ -8,6 +8,7 @@
 #include "ShaderParameters.h"
 #include "ShaderParameterStruct.h"
 #include "ScreenPass.h"
+#include "Engine/TextureRenderTarget2D.h"
 
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3
 #include "SceneRendering.h"
@@ -33,7 +34,8 @@ struct MULTIPASSPP_API FMultipassPPViewData : public IMultipassPPViewData
 
 	TRefCountPtr<IPooledRenderTarget> RT;
 	FString RTDebugName = "Multipass PP View Data RT";
-	EPixelFormat RTPixelFormat = EPixelFormat::PF_B8G8R8A8; // Equivalent to ETextureRenderTargetFormat::RTF_RGBA8_SRGB
+	ETextureRenderTargetFormat RTPixelFormat = ETextureRenderTargetFormat::RTF_RGBA8_SRGB;
+	FClearValueBinding RTClearValueBinding = FClearValueBinding::None;
 };
 
 class MULTIPASSPP_API FMultipassPPSceneExtension : public FSceneViewExtensionBase

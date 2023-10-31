@@ -19,6 +19,7 @@ void FMultipassPPModule::StartupModule()
 	{	
 		InterlaceSceneExtension = FSceneViewExtensions::NewExtension<FInterlacePPSceneExtension>();
 		MotionBlurSceneExtension = FSceneViewExtensions::NewExtension<FAccumulationMotionBlurSceneExtension>();
+		SharpenSceneExtension = FSceneViewExtensions::NewExtension<FAdaptiveSharpenSceneExtension>();
 	});
 }
 
@@ -26,6 +27,7 @@ void FMultipassPPModule::ShutdownModule()
 {
 	MotionBlurSceneExtension.Reset();
 	InterlaceSceneExtension.Reset();
+	SharpenSceneExtension.Reset();
 }
 
 TSharedPtr<FInterlacePPSceneExtension> FMultipassPPModule::GetInterlaceSceneExtension()
@@ -36,6 +38,11 @@ TSharedPtr<FInterlacePPSceneExtension> FMultipassPPModule::GetInterlaceSceneExte
 TSharedPtr<FAccumulationMotionBlurSceneExtension> FMultipassPPModule::GetAccumulationMotionBlurSceneExtension()
 {
 	return MotionBlurSceneExtension;
+}
+
+TSharedPtr<class FAdaptiveSharpenSceneExtension> FMultipassPPModule::GetSharpenSceneExtension()
+{
+	return SharpenSceneExtension;
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -18,8 +18,10 @@ public:
 
 	TSharedPtr<class FInterlacePPSceneExtension> GetInterlaceSceneExtension();
 	TSharedPtr<class FAccumulationMotionBlurSceneExtension> GetAccumulationMotionBlurSceneExtension();
+	TSharedPtr<class FAdaptiveSharpenSceneExtension> GetSharpenSceneExtension();
 
 protected:
 	TSharedPtr<class FInterlacePPSceneExtension> InterlaceSceneExtension;
 	TSharedPtr<class FAccumulationMotionBlurSceneExtension> MotionBlurSceneExtension;
+	TSharedPtr<class FAdaptiveSharpenSceneExtension> SharpenSceneExtension;
 };

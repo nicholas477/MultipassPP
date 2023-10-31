@@ -122,8 +122,8 @@ void FMultipassPPViewData::SetupRT(const FIntPoint& Resolution)
 			{
 				const FPooledRenderTargetDesc Desc = FPooledRenderTargetDesc::Create2DDesc(
 					Resolution,
-					GetPixelFormatFromRenderTargetFormat(ETextureRenderTargetFormat::RTF_RGBA8_SRGB),
-					FClearValueBinding::None,
+					GetPixelFormatFromRenderTargetFormat(RTPixelFormat),
+					RTClearValueBinding,
 					TexCreate_None,
 					TexCreate_ShaderResource | TexCreate_RenderTargetable | ETextureCreateFlags::UAV,
 					false);
@@ -137,8 +137,8 @@ void FMultipassPPViewData::SetupRT(const FIntPoint& Resolution)
 				{
 					const FPooledRenderTargetDesc Desc = FPooledRenderTargetDesc::Create2DDesc(
 						Resolution,
-						GetPixelFormatFromRenderTargetFormat(ETextureRenderTargetFormat::RTF_RGBA8_SRGB),
-						FClearValueBinding::None,
+						GetPixelFormatFromRenderTargetFormat(SharedThis->RTPixelFormat),
+						SharedThis->RTClearValueBinding,
 						TexCreate_None,
 						TexCreate_ShaderResource | TexCreate_RenderTargetable | ETextureCreateFlags::UAV,
 						false);
