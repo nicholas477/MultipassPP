@@ -3,11 +3,24 @@
 
 #include "AdaptiveSharpenSceneExtension.h"
 
+#include "AdaptiveSharpenBlendable.h"
 #include "CommonRenderResources.h"
 #include "PostProcess/PostProcessing.h"
 #include "PostProcess/PostProcessMaterial.h"
 #include "ScenePrivate.h"
 #include "Engine/TextureRenderTarget2D.h"
+
+static TAutoConsoleVariable<int32> CVarAdaptiveSharpeningEnabled(
+	TEXT("r.AdaptiveSharpening.Enabled"),
+	-1,
+	TEXT(""),
+	ECVF_Default);
+
+static TAutoConsoleVariable<float> CVarAdaptiveSharpeningStrength(
+	TEXT("r.AdaptiveSharpening.Strength"),
+	-1.f,
+	TEXT(""),
+	ECVF_Default);
 
 IMPLEMENT_GLOBAL_SHADER(FAdaptiveSharpenPixelShaderPass1, "/MultipassPP/Private/AdaptiveSharpening.usf", "Pass1PS", SF_Pixel);
 IMPLEMENT_GLOBAL_SHADER(FAdaptiveSharpenPixelShaderPass2, "/MultipassPP/Private/AdaptiveSharpeningPass2.usf", "Pass2PS", SF_Pixel);
@@ -16,6 +29,85 @@ FAdaptiveSharpenSceneExtension::FAdaptiveSharpenSceneExtension(const FAutoRegist
 	: FMultipassPPSceneExtension(AutoReg)
 {
 	PostProcessingPassName = "Adaptive Sharpen";
+	PostProcessingPasses = { EPostProcessingPass::FXAA };
+}
+
+void FAdaptiveSharpenSceneExtension::SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView)
+{
+	FMultipassPPSceneExtension::SetupView(InViewFamily, InView);
+
+	TSharedPtr<FAdaptiveSharpenViewData> ViewData = StaticCastSharedPtr<FAdaptiveSharpenViewData>(GetViewData(InView));
+	if (ViewData != nullptr)
+	{
+		ViewData->BlendableWeight = 0.f;
+		if (CVarAdaptiveSharpeningEnabled.GetValueOnAnyThread() >= 0)
+		{
+			ViewData->BlendableWeight = FMath::Clamp(CVarAdaptiveSharpeningEnabled.GetValueOnAnyThread(), 0, 1);
+		}
+		else
+		{
+			const FFinalPostProcessSettings& Dest = InView.FinalPostProcessSettings;
+			FBlendableEntry* BlendableIt = nullptr;
+			int32 NumEntries = 0;
+			while (FAdaptiveSharpenNode* DataPtr = Dest.BlendableManager.IterateBlendables<FAdaptiveSharpenNode>(BlendableIt))
+			{
+				if (DataPtr)
+				{
+					ViewData->BlendableWeight += BlendableIt->Weight;
+					NumEntries++;
+				}
+			}
+
+			if (NumEntries > 0)
+			{
+				ViewData->BlendableWeight /= NumEntries;
+			}
+		}
+
+		if (CVarAdaptiveSharpeningStrength.GetValueOnAnyThread() >= 0.f)
+		{
+			ViewData->Strength = FMath::Max(CVarAdaptiveSharpeningStrength.GetValueOnAnyThread(), 0);
+		}
+		else
+		{
+			const FFinalPostProcessSettings& Dest = InView.FinalPostProcessSettings;
+			FBlendableEntry* BlendableIt = nullptr;
+			int32 NumEntries = 0;
+			while (FAdaptiveSharpenNode* DataPtr = Dest.BlendableManager.IterateBlendables<FAdaptiveSharpenNode>(BlendableIt))
+			{
+				if (DataPtr)
+				{
+					ViewData->Strength += DataPtr->Strength;
+					NumEntries++;
+				}
+			}
+
+			if (NumEntries > 0)
+			{
+				ViewData->Strength /= NumEntries;
+			}
+		}
+	}
+}
+
+bool FAdaptiveSharpenSceneExtension::IsActiveThisFrame_Internal(const FSceneViewExtensionContext& Context) const
+{
+	check(IsInGameThread());
+
+	bool bIsActive = true;
+	bool bStrengthActive = true;
+
+	if (CVarAdaptiveSharpeningEnabled.GetValueOnGameThread() > -1)
+	{
+		bIsActive = CVarAdaptiveSharpeningEnabled.GetValueOnGameThread() > 0;
+	}
+
+	if (CVarAdaptiveSharpeningStrength.GetValueOnGameThread() >= 0.f)
+	{
+		bStrengthActive = CVarAdaptiveSharpeningStrength.GetValueOnGameThread() > 0.f;
+	}
+
+	return FMultipassPPSceneExtension::IsActiveThisFrame_Internal(Context) && bIsActive && bStrengthActive;
 }
 
 FScreenPassTexture FAdaptiveSharpenSceneExtension::PostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessMaterialInputs& InOutInputs, EPostProcessingPass Pass)
@@ -65,11 +157,14 @@ void FAdaptiveSharpenSceneExtension::SetupPass1Parameters(FRDGBuilder& GraphBuil
 
 void FAdaptiveSharpenSceneExtension::SetupPass2Parameters(FRDGBuilder& GraphBuilder, const FSceneView& View, const FViewInfo& ViewInfo, const FScreenPassTexture& Input, const FScreenPassRenderTarget& Output, FAdaptiveSharpenPixelShaderPass2::FParameters* Parameters)
 {
+	TSharedPtr<FAdaptiveSharpenViewData> ViewData = StaticCastSharedPtr<FAdaptiveSharpenViewData>(GetViewData(View));
+
 	Parameters->InputTexture = Input.Texture;
 	Parameters->InputSampler = TStaticSamplerState<>::GetRHI();
 	Parameters->RenderTargets[0] = Output.GetRenderTargetBinding();
 	Parameters->PixelUVSize.X = 1.f / Input.Texture->Desc.Extent.X;
 	Parameters->PixelUVSize.Y = 1.f / Input.Texture->Desc.Extent.Y;
+	Parameters->CurveHeight = FMath::Clamp(ViewData->BlendableWeight, 0.f, 1.f) * ViewData->Strength;
 }
 
 void FAdaptiveSharpenSceneExtension::DrawPass(int32 PassNum, FRDGBuilder& GraphBuilder, const FSceneView& View, const FViewInfo& ViewInfo, const FScreenPassTexture& Input, const FScreenPassRenderTarget& Output)

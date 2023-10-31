@@ -38,7 +38,7 @@ float2 PixelUVSize;
 
 //--------------------------------------- Settings ------------------------------------------------
 
-#define curve_height    1.0                  // Main control of sharpening strength [>0]
+float CurveHeight;                  		 // Main control of sharpening strength [>0]
                                              // 0.3 <-> 2.0 is a reasonable range of values
 
 #define video_level_out false                // True to preserve BTB & WTW (minor summation error)
@@ -204,7 +204,7 @@ float4 Pass2PS(
 	neg_laplace = pow(abs(neg_laplace/weightsum), (1.0/2.4)) - 0.06;
 
 	// Compute sharpening magnitude function
-	float sharpen_val = curve_height/(curve_height*curveslope*pow(abs(c_edge), 3.5) + 0.625);
+	float sharpen_val = CurveHeight/(CurveHeight*curveslope*pow(abs(c_edge), 3.5) + 0.625);
 
 	// Calculate sharpening diff and scale
 	float sharpdiff = (c0_Y - neg_laplace)*(lowthrsum*sharpen_val + 0.01);

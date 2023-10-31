@@ -38,6 +38,7 @@ public:
 		SHADER_PARAMETER_RDG_TEXTURE(Texture2D, InputTexture)
 		SHADER_PARAMETER_SAMPLER(SamplerState, InputSampler)
 		SHADER_PARAMETER(FVector2f, PixelUVSize)
+		SHADER_PARAMETER(float, CurveHeight)
 		RENDER_TARGET_BINDING_SLOTS()
 	END_SHADER_PARAMETER_STRUCT()
 };
@@ -50,6 +51,9 @@ struct MULTIPASSPP_API FAdaptiveSharpenViewData : public FMultipassPPViewData
 		RTPixelFormat = ETextureRenderTargetFormat::RTF_RGBA32f;
 		RTClearValueBinding = FClearValueBinding::Transparent;
 	}
+
+	float BlendableWeight = 0.f;
+	float Strength = 1.f;
 };
 
 
@@ -61,6 +65,9 @@ class MULTIPASSPP_API FAdaptiveSharpenSceneExtension
 {
 public:
 	FAdaptiveSharpenSceneExtension(const FAutoRegister& AutoReg);
+
+	virtual void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override;
+	virtual bool IsActiveThisFrame_Internal(const FSceneViewExtensionContext& Context) const override;
 
 	virtual FScreenPassTexture PostProcessPass_RenderThread(
 		FRDGBuilder& GraphBuilder,
