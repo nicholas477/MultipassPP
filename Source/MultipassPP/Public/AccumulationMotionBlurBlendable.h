@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "Engine/BlendableInterface.h"
 #include "AccumulationMotionBlurBlendable.generated.h"
 
 struct MULTIPASSPP_API FAccumulationMotionBlurNode
