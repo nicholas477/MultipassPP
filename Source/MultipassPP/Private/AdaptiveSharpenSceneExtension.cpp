@@ -39,7 +39,9 @@ void FAdaptiveSharpenSceneExtension::SetupView(FSceneViewFamily& InViewFamily, F
 	TSharedPtr<FAdaptiveSharpenViewData> ViewData = StaticCastSharedPtr<FAdaptiveSharpenViewData>(GetViewData(InView));
 	if (ViewData != nullptr)
 	{
+		ViewData->Strength = 0.f;
 		ViewData->BlendableWeight = 0.f;
+
 		if (CVarAdaptiveSharpeningEnabled.GetValueOnAnyThread() >= 0)
 		{
 			ViewData->BlendableWeight = FMath::Clamp(CVarAdaptiveSharpeningEnabled.GetValueOnAnyThread(), 0, 1);
@@ -118,8 +120,8 @@ FScreenPassTexture FAdaptiveSharpenSceneExtension::PostProcessPass_RenderThread(
 	const FViewInfo& ViewInfo = static_cast<const FViewInfo&>(View);
 	InOutInputs.Validate();
 
-	TSharedPtr<IMultipassPPViewData> ViewData = GetViewData(View);
-	if (ViewData != nullptr)
+	TSharedPtr<FAdaptiveSharpenViewData> ViewData = StaticCastSharedPtr<FAdaptiveSharpenViewData>(GetViewData(View));
+	if (ViewData != nullptr && ViewData->Strength > 0 && ViewData->BlendableWeight > 0)
 	{
 		// Pass 1: Scene color -> RT
 		FRDGTextureRef RTTexture = GraphBuilder.RegisterExternalTexture(ViewData->GetRT());
